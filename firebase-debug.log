@@ -1,0 +1,111 @@
+[debug] [2026-10-23T14:53:41.316Z] ----------------------------------------------------------------------
+[debug] [2026-10-23T14:53:41.319Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\ADMIN\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only firestore:indexes
+[debug] [2026-10-23T14:53:41.320Z] CLI Version:   15.26.0
+[debug] [2026-10-23T14:53:41.320Z] Platform:      win32
+[debug] [2026-10-23T14:53:41.320Z] Node Version:  v24.13.1
+[debug] [2026-10-23T14:53:41.320Z] Detected Agent: antigravity
+[debug] [2026-10-23T14:53:41.320Z] Time:          Fri Oct 23 2026 20:23:41 GMT+0530 (India Standard Time)
+[debug] [2026-10-23T14:53:41.320Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-23T14:53:42.730Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-23T14:53:42.730Z] > authorizing via signed-in user (jkjack203@gmail.com)
+[debug] [2026-10-23T14:53:42.730Z] [iam] checking project shopledger-969a4 for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-10-23T14:53:42.745Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:42.745Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:42.747Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/shopledger-969a4:testIamPermissions [none]
+[debug] [2026-10-23T14:53:42.747Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/shopledger-969a4:testIamPermissions  x-goog-user-project=shopledger-969a4
+[debug] [2026-10-23T14:53:42.747Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/shopledger-969a4:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2026-10-23T14:53:44.265Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/shopledger-969a4:testIamPermissions 200
+[debug] [2026-10-23T14:53:44.265Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/shopledger-969a4:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'shopledger-969a4'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-10-23T14:53:44.272Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:44.272Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:44.273Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default) [none]
+[debug] [2026-10-23T14:53:45.378Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default) 200
+[debug] [2026-10-23T14:53:45.378Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default) {"name":"projects/shopledger-969a4/databases/(default)","uid":"bd1bb196-49fd-4f89-a877-c035936bf843","createTime":"2026-10-12T13:02:51.713462Z","updateTime":"2026-10-12T13:02:51.713462Z","locationId":"asia-east1","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-10-23T13:53:45.635672Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"zde","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IPC4mK2y0JcDMLX2noHdtJcD"}
+[info] i  firestore: reading indexes from firestore.indexes.json... 
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2026-10-23T14:53:45.380Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:45.380Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:45.380Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/shopledger-969a4:test [none]
+[debug] [2026-10-23T14:53:45.381Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/shopledger-969a4:test [omitted]
+[debug] [2026-10-23T14:53:47.235Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/shopledger-969a4:test 200
+[debug] [2026-10-23T14:53:47.235Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/shopledger-969a4:test {}
+[info] +  cloud.firestore: rules file firestore.rules compiled successfully 
+[info] i  firestore: deploying indexes... 
+[debug] [2026-10-23T14:53:47.239Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:47.239Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:47.239Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/-/indexes [none]
+[debug] [2026-10-23T14:53:47.479Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/-/indexes 200
+[debug] [2026-10-23T14:53:47.479Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/-/indexes {"indexes":[{"name":"projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes/CICAgOjXh4EK","queryScope":"COLLECTION","fields":[{"fieldPath":"date","order":"ASCENDING"},{"fieldPath":"staffUid","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"},{"fieldPath":"__name__","order":"DESCENDING"}],"state":"READY","density":"SPARSE_ALL"}]}
+[debug] [2026-10-23T14:53:47.479Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:47.479Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:47.479Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* [none]
+[debug] [2026-10-23T14:53:47.672Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* 200
+[debug] [2026-10-23T14:53:47.673Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* {"fields":[{"name":"projects/shopledger-969a4/databases/(default)/collectionGroups/__default__/fields/*","indexConfig":{"indexes":[{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"ASCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"DESCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","arrayConfig":"CONTAINS"}],"state":"READY"}]}}]}
+[debug] [2026-10-23T14:53:47.673Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:47.673Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:47.673Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default) [none]
+[debug] [2026-10-23T14:53:47.855Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default) 200
+[debug] [2026-10-23T14:53:47.856Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default) {"name":"projects/shopledger-969a4/databases/(default)","uid":"bd1bb196-49fd-4f89-a877-c035936bf843","createTime":"2026-10-12T13:02:51.713462Z","updateTime":"2026-10-12T13:02:51.713462Z","locationId":"asia-east1","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-10-23T13:53:48.111167Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"zde","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IPLKr66y0JcDMLX2noHdtJcD"}
+[info] i  firestore: there are 1 indexes defined in your project that are not present in your firestore indexes file. To delete them, run this command with the --force flag. 
+[debug] [2026-10-23T14:53:47.857Z] Creating new index: {"collectionGroup":"transactions","queryScope":"COLLECTION_GROUP","fields":[{"fieldPath":"date","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}
+[debug] [2026-10-23T14:53:47.857Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:47.857Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:47.857Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes [none]
+[debug] [2026-10-23T14:53:47.857Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"fields":[{"fieldPath":"date","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}],"queryScope":"COLLECTION_GROUP"}
+[debug] [2026-10-23T14:53:48.156Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes 200
+[debug] [2026-10-23T14:53:48.156Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"name":"projects/shopledger-969a4/databases/(default)/operations/S01vcFVpSmdBQ0lDDCoDIDI3YTVlYjdlYzNjMy02MTFhLTFhOTQtNGU2Ni0yNDZjMTk0ZCQac2VuaWxlcGlwCQpBEg","metadata":{"@type":"type.googleapis.com/google.firestore.admin.v1.IndexOperationMetadata","startTime":"2026-10-23T14:53:48.388946Z","index":"projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes/CICAgJiUpoMK","state":"INITIALIZING"}}
+[debug] [2026-10-23T14:53:48.156Z] Creating new index: {"collectionGroup":"transactions","queryScope":"COLLECTION_GROUP","fields":[{"fieldPath":"staffUid","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}
+[debug] [2026-10-23T14:53:48.156Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:48.156Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:48.156Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes [none]
+[debug] [2026-10-23T14:53:48.156Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"fields":[{"fieldPath":"staffUid","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}],"queryScope":"COLLECTION_GROUP"}
+[debug] [2026-10-23T14:53:48.950Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes 200
+[debug] [2026-10-23T14:53:48.950Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"name":"projects/shopledger-969a4/databases/(default)/operations/S0FKazNpT2dBQ0lDDCoDIGRhNGMwZGFlN2U0Yi0yNDI4LWYwNjQtYzVhYS05ZDYzZWQ4NiQac2VuaWxlcGlwCQpBEg","metadata":{"@type":"type.googleapis.com/google.firestore.admin.v1.IndexOperationMetadata","startTime":"2026-10-23T14:53:49.196789Z","index":"projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes/CICAgOi3kJAK","state":"INITIALIZING"}}
+[debug] [2026-10-23T14:53:48.950Z] Creating new index: {"collectionGroup":"transactions","queryScope":"COLLECTION_GROUP","fields":[{"fieldPath":"date","order":"ASCENDING"},{"fieldPath":"staffUid","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}
+[debug] [2026-10-23T14:53:48.951Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:48.951Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:48.951Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes [none]
+[debug] [2026-10-23T14:53:48.951Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"fields":[{"fieldPath":"date","order":"ASCENDING"},{"fieldPath":"staffUid","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}],"queryScope":"COLLECTION_GROUP"}
+[debug] [2026-10-23T14:53:50.587Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes 200
+[debug] [2026-10-23T14:53:50.587Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"name":"projects/shopledger-969a4/databases/(default)/operations/S0E0MW1pSmdBQ0lDDCoDIDJlYTY3MjgyZTVjNC1iMTJhLWY1MTQtNjk2Yy04YWY5NWFiMCQac2VuaWxlcGlwCQpBEg","metadata":{"@type":"type.googleapis.com/google.firestore.admin.v1.IndexOperationMetadata","startTime":"2026-10-23T14:53:50.816204Z","index":"projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes/CICAgJim14AK","state":"INITIALIZING"}}
+[debug] [2026-10-23T14:53:50.588Z] Creating new index: {"collectionGroup":"transactions","queryScope":"COLLECTION_GROUP","fields":[{"fieldPath":"type","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}
+[debug] [2026-10-23T14:53:50.588Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:50.588Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:50.588Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes [none]
+[debug] [2026-10-23T14:53:50.588Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"fields":[{"fieldPath":"type","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}],"queryScope":"COLLECTION_GROUP"}
+[debug] [2026-10-23T14:53:52.241Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes 200
+[debug] [2026-10-23T14:53:52.242Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"name":"projects/shopledger-969a4/databases/(default)/operations/SkE0MW1pSmdBQ0lDDCoDIDRmODFjOGVkZDZlNy1mNDM4LTYyNjQtNzYyMy1lNDhhOTAxMCQac2VuaWxlcGlwCQpBEg","metadata":{"@type":"type.googleapis.com/google.firestore.admin.v1.IndexOperationMetadata","startTime":"2026-10-23T14:53:52.478316Z","index":"projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes/CICAgJim14AJ","state":"INITIALIZING"}}
+[debug] [2026-10-23T14:53:52.242Z] Creating new index: {"collectionGroup":"transactions","queryScope":"COLLECTION_GROUP","fields":[{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}
+[debug] [2026-10-23T14:53:52.242Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:52.242Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:52.242Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes [none]
+[debug] [2026-10-23T14:53:52.242Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"fields":[{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}],"queryScope":"COLLECTION_GROUP"}
+[debug] [2026-10-23T14:53:56.274Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes 200
+[debug] [2026-10-23T14:53:56.274Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"name":"projects/shopledger-969a4/databases/(default)/operations/S0lvOUZqSmdBQ0lDDCoDIGI4NjAyZWEzZGJmZC1kOGJhLTNkZDQtZTAzNS1iNjFkNzFhZiQac2VuaWxlcGlwCQpBEg","metadata":{"@type":"type.googleapis.com/google.firestore.admin.v1.IndexOperationMetadata","startTime":"2026-10-23T14:53:56.514955Z","index":"projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes/CICAgJjF9oIK","state":"INITIALIZING"}}
+[debug] [2026-10-23T14:53:56.274Z] Creating new index: {"collectionGroup":"transactions","queryScope":"COLLECTION_GROUP","fields":[{"fieldPath":"paymentMode","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}
+[debug] [2026-10-23T14:53:56.274Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:56.274Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:56.274Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes [none]
+[debug] [2026-10-23T14:53:56.274Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"fields":[{"fieldPath":"paymentMode","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}],"queryScope":"COLLECTION_GROUP"}
+[debug] [2026-10-23T14:53:57.524Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes 200
+[debug] [2026-10-23T14:53:57.524Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes {"name":"projects/shopledger-969a4/databases/(default)/operations/SklvOUZqSmdBQ0lDDCoDIGUxMmNhYjMzODEzYy0yZmJiLTA5YzQtNjc2MS0yYTY2Mzk4NSQac2VuaWxlcGlwCQpBEg","metadata":{"@type":"type.googleapis.com/google.firestore.admin.v1.IndexOperationMetadata","startTime":"2026-10-23T14:53:57.749944Z","index":"projects/shopledger-969a4/databases/(default)/collectionGroups/transactions/indexes/CICAgJjF9oIJ","state":"INITIALIZING"}}
+[debug] [2026-10-23T14:53:57.524Z] Creating new index: {"collectionGroup":"dailySummary","queryScope":"COLLECTION_GROUP","fields":[{"fieldPath":"date","order":"ASCENDING"}]}
+[debug] [2026-10-23T14:53:57.524Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:57.524Z] Checked if tokens are valid: true, expires at: 1792770236660
+[debug] [2026-10-23T14:53:57.525Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/dailySummary/indexes [none]
+[debug] [2026-10-23T14:53:57.525Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/dailySummary/indexes {"fields":[{"fieldPath":"date","order":"ASCENDING"}],"queryScope":"COLLECTION_GROUP"}
+[debug] [2026-10-23T14:54:01.675Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/dailySummary/indexes 400
+[debug] [2026-10-23T14:54:01.675Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/shopledger-969a4/databases/(default)/collectionGroups/dailySummary/indexes {"error":{"code":400,"message":"this index is not necessary, configure using single field index controls","status":"INVALID_ARGUMENT"}}
+[debug] [2026-10-23T14:54:06.688Z] Error: Timed out.
+    at Timeout._onTimeout (C:\Users\ADMIN\AppData\Roaming\npm\node_modules\firebase-tools\lib\utils.js:296:49)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[error] 
+[error] Error: An unexpected error has occurred.

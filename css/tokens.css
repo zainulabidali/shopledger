@@ -1,0 +1,119 @@
+/**
+ * ShopLedger - Design Tokens
+ * Defines typography, brand colors, financial semantic colors, spacing, radii, and shadows
+ */
+:root {
+  /* Typography */
+  --sl-font-family: 'Inter', 'Noto Sans Malayalam', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --sl-font-family-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  /* Font Sizes */
+  --sl-font-xs: 0.75rem;     /* 12px */
+  --sl-font-sm: 0.875rem;    /* 14px */
+  --sl-font-base: 1rem;      /* 16px */
+  --sl-font-lg: 1.125rem;    /* 18px */
+  --sl-font-xl: 1.25rem;     /* 20px */
+  --sl-font-2xl: 1.5rem;     /* 24px */
+  --sl-font-3xl: 1.875rem;   /* 30px */
+  --sl-font-4xl: 2.25rem;    /* 36px */
+
+  /* Brand Colors (Modern Fintech Indigo) */
+  --sl-brand-50: #eef2ff;
+  --sl-brand-100: #e0e7ff;
+  --sl-brand-200: #c7d2fe;
+  --sl-brand-500: #6366f1;
+  --sl-brand-600: #4f46e5;
+  --sl-brand-700: #4338ca;
+  --sl-brand-primary: #4338ca;
+  --sl-brand-primary-rgb: 67, 56, 202;
+  --sl-brand-hover: #3730a3;
+  --sl-brand-subtle: #f5f3ff;
+
+  /* Financial Semantics - Income (Emerald) */
+  --sl-income-50: #ecfdf5;
+  --sl-income-100: #d1fae5;
+  --sl-income-200: #a7f3d0;
+  --sl-income-500: #10b981;
+  --sl-income-600: #059669;
+  --sl-income-700: #047857;
+  --sl-income-primary: #10b981;
+  --sl-income-primary-rgb: 16, 185, 129;
+  --sl-income-dark: #047857;
+  --sl-income-text: #065f46;
+  --sl-income-bg: #ecfdf5;
+  --sl-income-border: #a7f3d0;
+
+  /* Financial Semantics - Expense (Rose) */
+  --sl-expense-50: #fef2f2;
+  --sl-expense-100: #fee2e2;
+  --sl-expense-200: #fecaca;
+  --sl-expense-500: #ef4444;
+  --sl-expense-600: #dc2626;
+  --sl-expense-700: #b91c1c;
+  --sl-expense-primary: #ef4444;
+  --sl-expense-primary-rgb: 239, 68, 68;
+  --sl-expense-dark: #b91c1c;
+  --sl-expense-text: #991b1b;
+  --sl-expense-bg: #fef2f2;
+  --sl-expense-border: #fecaca;
+
+  /* Financial Semantics - Warning / Purchase / Attention (Amber) */
+  --sl-warning-50: #fffbeb;
+  --sl-warning-100: #fef3c7;
+  --sl-warning-200: #fde68a;
+  --sl-warning-500: #f59e0b;
+  --sl-warning-600: #d97706;
+  --sl-warning-primary: #f59e0b;
+  --sl-warning-text: #92400e;
+  --sl-warning-bg: #fffbeb;
+  --sl-warning-border: #fde68a;
+
+  /* Semantic - Info / UPI / Digital (Cyan/Sky) */
+  --sl-info-50: #f0f9ff;
+  --sl-info-100: #e0f2fe;
+  --sl-info-500: #0ea5e9;
+  --sl-info-600: #0284c7;
+  --sl-info-primary: #0284c7;
+  --sl-info-text: #075985;
+  --sl-info-bg: #f0f9ff;
+  --sl-info-border: #bae6fd;
+
+  /* Neutral Surfaces & Backgrounds */
+  --sl-bg-app: #f8fafc;
+  --sl-surface-card: #ffffff;
+  --sl-surface-card-subtle: #f8fafc;
+  --sl-surface-hover: #f1f5f9;
+  --sl-border-subtle: #e2e8f0;
+  --sl-border-strong: #cbd5e1;
+
+  /* Text Colors */
+  --sl-text-primary: #0f172a;
+  --sl-text-secondary: #475569;
+  --sl-text-muted: #94a3b8;
+  --sl-text-inverse: #ffffff;
+
+  /* Radii */
+  --sl-radius-xs: 4px;
+  --sl-radius-sm: 8px;
+  --sl-radius-md: 12px;
+  --sl-radius-lg: 16px;
+  --sl-radius-xl: 20px;
+  --sl-radius-full: 9999px;
+
+  /* Elevation Shadows */
+  --sl-shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --sl-shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --sl-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --sl-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --sl-shadow-card: 0 2px 8px -2px rgba(15, 23, 42, 0.06), 0 1px 4px -1px rgba(15, 23, 42, 0.04);
+
+  /* Touch & Layout Dimensions */
+  --sl-touch-target-min: 48px;
+  --sl-header-height: 64px;
+  --sl-sidebar-width: 260px;
+  --sl-bottom-nav-height: 68px;
+
+  --sl-brand-focus: rgba(67, 56, 202, 0.12);
+  --sl-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --sl-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}

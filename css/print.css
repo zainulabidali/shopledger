@@ -1,0 +1,60 @@
+/**
+ * ShopLedger - Print Stylesheet
+ * Optimizes output for thermal / A4 printers and saving as clean PDF reports
+ */
+@media print {
+  /* Hide non-printable app chrome */
+  .app-sidebar,
+  .mobile-bottom-nav,
+  .app-header-right,
+  .filter-bar-scroll,
+  .sl-btn,
+  #toast-container,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt;
+  }
+
+  .app-main {
+    margin-left: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .page-container {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .sl-card {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #ddd !important;
+    padding: 6px 10px !important;
+  }
+
+  .print-only-header {
+    display: block !important;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+  }
+}
+
+.print-only-header {
+  display: none;
+}

@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+             getUserData().role == 'super_admin' && 
+             getUserData().get('active', true) == true;
+    }
+
+    function isOwnerOrAdminOf(shopId) {
+      return isAuthenticated() && 
+             (getUserData().shopId == shopId || getUserData().role == 'super_admin') && 
+             (getUserData().role == 'owner' || getUserData().role == 'admin' || getUserData().role == 'super_admin') && 
+             getUserData().get('active', true) == true;
+    }
+
+    function isStaffOf(shopId) {
+      return isAuthenticated() && 
+             getUserData().shopId == shopId && 
+             getUserData().role == 'staff' && 
+             getUserData().get('active', true) == true;
+    }
+
+    function isDayUnlocked(shopId, dateStr) {
+      return !exists(/databases/$(database)/documents/shops/$(shopId)/dailySummary/$(dateStr)) ||
+             get(/databases/$(database)/documents/shops/$(shopId)/dailySummary/$(dateStr)).data.get('locked', false) != true;
+    }
+
+    // 1. Users Root Collection
+    match /users/{uid} {
+      allow read: if isAuthenticated() && (request.auth.uid == uid || isSuperAdmin() || (getUserData().shopId != null && getUserData().shopId == resource.data.shopId));
+      allow create: if isAuthenticated();
+      allow update, delete: if isSuperAdmin() || 
+                               (isAuthenticated() && (getUserData().role == 'owner' || getUserData().role == 'admin') && getUserData().shopId == resource.data.shopId);
+    }
+
+    // 2. Invitations Root Collection
+    match /invitations/{token} {
+      allow read: if true;
+      allow create: if isSuperAdmin() || 
+                       (isAuthenticated() && (getUserData().role == 'owner' || getUserData().role == 'admin') && getUserData().shopId == request.resource.data.shopId);
+      allow update: if true;
+      allow delete: if isSuperAdmin() || 
+                       (isAuthenticated() && (getUserData().role == 'owner' || getUserData().role == 'admin') && getUserData().shopId == resource.data.shopId);
+    }
+
+    // 3. Shops Root Collection
+    match /shops/{shopId} {
+      allow read: if isSuperAdmin() || isOwnerOrAdminOf(shopId) || isStaffOf(shopId);
+      allow write: if isSuperAdmin() || isOwnerOrAdminOf(shopId);
+
+      // Subcollection: Transactions
+      match /transactions/{txId} {
+        allow read: if isSuperAdmin() || isOwnerOrAdminOf(shopId) || 
+                       (isStaffOf(shopId) && resource.data.staffUid == request.auth.uid);
+
+        allow create: if (isSuperAdmin() || isOwnerOrAdminOf(shopId) || isStaffOf(shopId))
+                      && request.resource.data.amount is number
+                      && request.resource.data.amount > 0
+                      && request.resource.data.type in ['sale', 'purchase', 'expense']
+                      && request.resource.data.paymentMode in ['cash', 'upi', 'card']
+                      && isDayUnlocked(shopId, request.resource.data.date);
+
+        allow update, delete: if isSuperAdmin() || isOwnerOrAdminOf(shopId)
+                              && isDayUnlocked(shopId, resource.data.date);
+      }
+
+      // Subcollection: Daily Summaries
+      match /dailySummary/{date} {
+        allow read: if isSuperAdmin() || isOwnerOrAdminOf(shopId) || isStaffOf(shopId);
+        allow write: if isSuperAdmin() || isOwnerOrAdminOf(shopId) || 
+                        (isStaffOf(shopId) && isDayUnlocked(shopId, date));
+      }
+
+      // Subcollection: Monthly Summaries
+      match /monthlySummary/{month} {
+        allow read: if isSuperAdmin() || isOwnerOrAdminOf(shopId) || isStaffOf(shopId);
+        allow write: if isSuperAdmin() || isOwnerOrAdminOf(shopId) || isStaffOf(shopId);
+      }
+    }
+  }
+}
