@@ -46,6 +46,15 @@ export async function renderDayClose() {
 
   const isLocked = summary.locked === true;
   const reconciliation = summary.reconciliation || {};
+  const canReopen = user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin';
+
+  // Detect whether transactions were added/modified after day was closed
+  const wasClosed = isLocked || (summary.closingHistory && summary.closingHistory.length > 0);
+  const snapshotCount = reconciliation.snapshotTransactionCount;
+  const snapshotCash = reconciliation.snapshotExpectedCash;
+  const hasChangedAfterClosing = wasClosed && snapshotCount !== undefined && (
+    todayTxs.length !== snapshotCount || Math.abs(expectedCash - (snapshotCash !== undefined ? snapshotCash : expectedCash)) > 0.01
+  );
 
   return `
     <div class="page-container" style="max-width: 760px;">
@@ -61,15 +70,48 @@ export async function renderDayClose() {
         </div>
       </div>
 
-      <!-- Lock Banner if already locked -->
+      <!-- 1. Day Already Closed Status Banner -->
       ${isLocked ? `
-        <div class="alert alert-warning d-flex align-items-center gap-3 p-3 mb-4 rounded-4 border-warning-subtle shadow-sm">
-          <i class="bi bi-lock-fill fs-3 text-warning"></i>
+        <div class="alert alert-success border-success-subtle shadow-sm p-3 mb-4 rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-3">
+            <div class="bg-success-subtle text-success p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+              <i class="bi bi-shield-lock-fill fs-4"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <h6 class="fw-bold mb-0 text-dark">Day Already Closed & Locked</h6>
+                <span class="badge bg-success text-white" style="font-size: 10px; letter-spacing: 0.5px;">CLOSED</span>
+              </div>
+              <div class="small text-muted mt-1">
+                Verified at ${reconciliation.verifiedAt ? new Date(reconciliation.verifiedAt).toLocaleTimeString() : 'End of Day'} by <strong>${reconciliation.verifiedByName || reconciliation.verifiedBy || 'Store Admin'}</strong>.
+                Counted: <strong>${formatINR(reconciliation.countedCash)}</strong> | Variance: <strong>${formatINR(reconciliation.difference)}</strong>
+              </div>
+              ${reconciliation.note ? `<div class="small text-secondary mt-1 fst-italic">"${reconciliation.note}"</div>` : ''}
+            </div>
+          </div>
+
+          ${canReopen ? `
+            <button type="button" id="btn-reopen-day" class="sl-btn sl-btn-outline-danger sl-btn-sm">
+              <i class="bi bi-unlock-fill me-1"></i>
+              <span>Reopen Day</span>
+            </button>
+          ` : ''}
+        </div>
+      ` : ''}
+
+      <!-- 2. Post-Close Change Notification -->
+      ${hasChangedAfterClosing ? `
+        <div class="alert alert-warning border-warning-subtle shadow-sm p-3 mb-4 rounded-3 d-flex align-items-start gap-3">
+          <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
           <div>
-            <div class="fw-bold">${t('dayLockedNotice')}</div>
-            <div class="small text-muted">
-              Verified by ${reconciliation.verifiedBy || 'Store Owner'} at ${reconciliation.verifiedAt ? new Date(reconciliation.verifiedAt).toLocaleTimeString() : 'End of Day'}.
-              Counted Cash: ${formatINR(reconciliation.countedCash)}, Difference: ${formatINR(reconciliation.difference)}.
+            <div class="fw-bold text-dark">Notice: Records Changed Since Last Closing</div>
+            <div class="small text-muted mt-1">
+              This date was closed with <strong>${snapshotCount} entries</strong> (Expected Cash: <strong>${formatINR(snapshotCash)}</strong>), but currently has <strong>${todayTxs.length} entries</strong> (Expected Cash: <strong>${formatINR(expectedCash)}</strong>).
+            </div>
+            <div class="small text-secondary mt-1">
+              ${isLocked 
+                ? 'To update the closing figures and reconcile new entries, an authorized admin must Reopen Day first.' 
+                : 'Transactions were updated while day was reopened. Please verify counted cash and finalize day close.'}
             </div>
           </div>
         </div>
@@ -81,26 +123,62 @@ export async function renderDayClose() {
           <div class="sl-card text-center p-3">
             <div class="small fw-semibold text-muted text-uppercase" style="font-size: 11px;">${t('totalIncome')}</div>
             <div class="fw-bold text-success fs-4 mt-1">${formatINR(summary.totalSales)}</div>
-            <div class="small text-muted" style="font-size: 11px;">${summary.transactionCount} entries</div>
+            <div class="small text-muted" style="font-size: 11px;">${todayTxs.filter(t => t.type === 'sale').length} sales entries</div>
           </div>
         </div>
         <div class="col-sm-4">
           <div class="sl-card text-center p-3">
             <div class="small fw-semibold text-muted text-uppercase" style="font-size: 11px;">Total Outflow</div>
             <div class="fw-bold text-danger fs-4 mt-1">${formatINR(summary.totalPurchase + summary.totalExpense)}</div>
-            <div class="small text-muted" style="font-size: 11px;">Stock + Expenses</div>
+            <div class="small text-muted" style="font-size: 11px;">Purchases + Expenses</div>
           </div>
         </div>
         <div class="col-sm-4">
           <div class="sl-card text-center p-3">
-            <div class="small fw-semibold text-muted text-uppercase" style="font-size: 11px;">${t('netProfit')}</div>
-            <div class="fw-bold ${summary.profit >= 0 ? 'text-success' : 'text-danger'} fs-4 mt-1">
-              ${formatINR(summary.profit)}
+            <div class="small fw-semibold text-muted text-uppercase" style="font-size: 11px;">Net Cash Flow</div>
+            <div class="fw-bold ${summary.totalSales - (summary.totalPurchase + summary.totalExpense) >= 0 ? 'text-success' : 'text-danger'} fs-4 mt-1">
+              ${formatINR(summary.totalSales - (summary.totalPurchase + summary.totalExpense))}
             </div>
-            <div class="small text-muted" style="font-size: 11px;">Margin: ${summary.totalSales > 0 ? ((summary.profit / summary.totalSales) * 100).toFixed(1) : 0}%</div>
+            <div class="small text-muted" style="font-size: 11px;">Total: ${todayTxs.length} entries</div>
           </div>
         </div>
       </div>
+
+      <!-- Historical Closings Accordion if previously reopened -->
+      ${summary.closingHistory && summary.closingHistory.length > 0 ? `
+        <div class="accordion mb-4" id="historyAccordion">
+          <div class="accordion-item border rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed py-2 small fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#historyCollapse">
+                <i class="bi bi-clock-history me-2 text-primary"></i>
+                Closing & Audit Log (${summary.closingHistory.length} previous event${summary.closingHistory.length > 1 ? 's' : ''})
+              </button>
+            </h2>
+            <div id="historyCollapse" class="accordion-collapse collapse" data-bs-parent="#historyAccordion">
+              <div class="accordion-body bg-light p-3 small">
+                <div class="list-group list-group-flush">
+                  ${summary.closingHistory.map((h, idx) => `
+                    <div class="list-group-item bg-transparent px-0 py-2">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold text-dark">Closing Record #${idx + 1}</span>
+                        <span class="text-muted" style="font-size: 11px;">${h.verifiedAt ? new Date(h.verifiedAt).toLocaleString() : ''}</span>
+                      </div>
+                      <div class="text-muted mt-1">
+                        Counted: ${formatINR(h.countedCash)} | Variance: ${formatINR(h.difference)} | By: ${h.verifiedByName || h.verifiedBy || 'Store Admin'}
+                      </div>
+                      ${h.reopenedAt ? `
+                        <div class="text-danger small mt-1">
+                          <i class="bi bi-unlock me-1"></i>Reopened on ${new Date(h.reopenedAt).toLocaleString()} by ${h.reopenedBy || 'Store Admin'}${h.reopenReason ? ` ("${h.reopenReason}")` : ''}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
 
       <!-- Cash Reconciliation Card -->
       <div class="sl-card p-4 mb-4">
@@ -135,7 +213,7 @@ export async function renderDayClose() {
           </label>
           <div class="input-group input-group-lg">
             <span class="input-group-text bg-white fw-bold">₹</span>
-            <input type="number" id="input-counted-cash" class="form-control fw-bold fs-3" placeholder="0" value="${reconciliation.countedCash || ''}" ${isLocked ? 'disabled' : ''}>
+            <input type="number" id="input-counted-cash" class="form-control fw-bold fs-3" placeholder="0" value="${reconciliation.countedCash !== undefined ? reconciliation.countedCash : ''}" ${isLocked ? 'disabled' : ''}>
           </div>
         </div>
 
@@ -153,7 +231,7 @@ export async function renderDayClose() {
           </div>
         </div>
 
-        <!-- Denomination Calculator Accordion (Optional Handy Tool) -->
+        <!-- Denomination Calculator Accordion -->
         ${!isLocked ? `
           <div class="accordion mb-4" id="denomAccordion">
             <div class="accordion-item border rounded-3 overflow-hidden">
@@ -192,7 +270,7 @@ export async function renderDayClose() {
           <textarea id="closing-notes" class="form-control" rows="2" placeholder="e.g. ₹50 loose coin surplus kept in drawer for tomorrow" ${isLocked ? 'disabled' : ''}>${reconciliation.note || ''}</textarea>
         </div>
 
-        <!-- Lock Button -->
+        <!-- Lock Button or Disabled Closed Indicator -->
         ${!isLocked ? `
           <button type="button" id="btn-lock-day" class="sl-btn sl-btn-primary sl-btn-block sl-btn-lg">
             <i class="bi bi-lock-fill"></i>
@@ -200,8 +278,8 @@ export async function renderDayClose() {
           </button>
         ` : `
           <button type="button" class="sl-btn sl-btn-outline sl-btn-block sl-btn-lg" disabled>
-            <i class="bi bi-check2-all text-success"></i>
-            <span>Day Successfully Locked & Frozen</span>
+            <i class="bi bi-shield-check text-success me-1"></i>
+            <span>Day Already Closed & Locked</span>
           </button>
         `}
 
@@ -295,10 +373,14 @@ export function bindDayCloseEvents(router) {
     });
   });
 
-  // Lock Day Button
+  // Lock Day Button with duplicate submission guard
   const lockBtn = document.getElementById('btn-lock-day');
+  let isLocking = false;
+
   if (lockBtn) {
     lockBtn.addEventListener('click', () => {
+      if (isLocking) return;
+
       const counted = Number(countedInput.value);
       if (countedInput.value === '' || isNaN(counted)) {
         showToast('Please enter counted physical cash before locking.', 'warning');
@@ -311,10 +393,15 @@ export function bindDayCloseEvents(router) {
 
       showConfirmModal({
         title: 'Lock & Finalize Day?',
-        message: `Are you sure you want to lock records for <strong>${selectedDate}</strong>?<br><br>Counted Cash: <strong>${formatINR(counted)}</strong><br>Difference: <strong>${formatINR(diff)}</strong><br><br><span class="text-danger small"><i class="bi bi-info-circle me-1"></i>Once locked, no staff or owner can add, edit, or delete transactions for this date.</span>`,
+        message: `Are you sure you want to lock records for <strong>${selectedDate}</strong>?<br><br>Counted Cash: <strong>${formatINR(counted)}</strong><br>Difference: <strong>${formatINR(diff)}</strong><br><br><span class="text-danger small"><i class="bi bi-info-circle me-1"></i>Once locked, no further transactions can be added, edited, or removed for this date.</span>`,
         confirmText: 'Yes, Lock Day',
         confirmClass: 'btn-danger',
         onConfirm: async () => {
+          if (isLocking) return;
+          isLocking = true;
+          lockBtn.disabled = true;
+          lockBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Locking Day...';
+
           try {
             const user = await authService.getCurrentUser();
             const shopId = user.shopId || 'shop_metro_001';
@@ -324,13 +411,49 @@ export function bindDayCloseEvents(router) {
               expectedCash: expectedVal,
               difference: diff,
               note: notes,
-              ownerUid: user.uid
+              ownerUid: user.uid,
+              verifiedByName: user.name || user.email || 'Store Owner'
             });
 
-            showToast(`Day ${selectedDate} locked successfully!`, 'success');
+            showToast(`Day ${selectedDate} closed and locked successfully!`, 'success');
             router.refresh();
           } catch (err) {
             showToast(err.message || 'Error locking day', 'error');
+            lockBtn.disabled = false;
+            lockBtn.innerHTML = `<i class="bi bi-lock-fill"></i> <span>${t('lockDayBtn')}</span>`;
+          } finally {
+            isLocking = false;
+          }
+        }
+      });
+    });
+  }
+
+  // Reopen Day Button for Authorized Owners / Admins
+  const reopenBtn = document.getElementById('btn-reopen-day');
+  if (reopenBtn) {
+    reopenBtn.addEventListener('click', () => {
+      showConfirmModal({
+        title: 'Reopen Day for Corrections?',
+        message: `Are you sure you want to reopen records for <strong>${selectedDate}</strong>?<br><br>This will unlock the day so necessary transaction corrections can be made.<br><br><span class="text-muted small"><i class="bi bi-shield-check me-1"></i>Previous closing records are preserved in the audit log.</span>`,
+        confirmText: 'Yes, Reopen Day',
+        confirmClass: 'btn-danger',
+        onConfirm: async () => {
+          reopenBtn.disabled = true;
+          reopenBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Reopening...';
+
+          try {
+            const user = await authService.getCurrentUser();
+            const shopId = user ? (user.shopId || 'shop_metro_001') : 'shop_metro_001';
+            const userName = user ? (user.name || user.email || 'Store Admin') : 'Store Admin';
+
+            await summaryService.unlockAndReopenDay(shopId, selectedDate, 'Corrections required', userName);
+            showToast(`Day ${selectedDate} has been reopened for corrections.`, 'info');
+            router.refresh();
+          } catch (err) {
+            showToast(err.message || 'Error reopening day', 'error');
+            reopenBtn.disabled = false;
+            reopenBtn.innerHTML = '<i class="bi bi-unlock-fill me-1"></i> <span>Reopen Day</span>';
           }
         }
       });

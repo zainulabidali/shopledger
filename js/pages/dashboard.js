@@ -74,9 +74,10 @@ export async function bindDashboardEvents(router) {
 
   const shopId = user.shopId || 'shop_metro_001';
 
-  // Attach period filter clicks
+  // Attach period filter clicks (idempotent guard to prevent duplicate listeners)
   const filterContainer = document.getElementById('dashboard-period-filter');
-  if (filterContainer) {
+  if (filterContainer && !filterContainer.dataset.bound) {
+    filterContainer.dataset.bound = 'true';
     filterContainer.addEventListener('click', async (e) => {
       const pill = e.target.closest('.filter-pill');
       if (!pill) return;
@@ -100,111 +101,123 @@ async function loadDashboardMetrics(shopId) {
   try {
     const data = await summaryService.getPeriodAnalytics(shopId, activePeriod);
     const kpi = data.kpi;
-    const isProfitPositive = kpi.netProfit >= 0;
+    const isFlowPositive = kpi.netCashFlow >= 0;
+    const hasTransactions = (kpi.totalTransactions || 0) > 0;
+    const hasCategoryData = Object.keys(data.categoryTotals || {}).length > 0;
 
     container.innerHTML = `
-      <!-- KPI Metric Cards Grid -->
+      <!-- KPI Metric Cards Grid (4 Primary Cards) -->
       <div class="kpi-grid">
-        <!-- 1. Total Income -->
+        <!-- 1. Total Sales -->
         <div class="kpi-card kpi-income">
           <div class="kpi-header">
-            <span class="kpi-label">${t('totalIncome')}</span>
+            <span class="kpi-label">Total Sales</span>
             <div class="kpi-icon-wrap">
               <i class="bi bi-arrow-down-left"></i>
             </div>
           </div>
-          <div class="kpi-value text-success">${formatINR(kpi.totalIncome)}</div>
-          <div class="kpi-subtext">
-            <span><i class="bi bi-check-circle-fill text-success"></i> ${kpi.transactionCount} entries</span>
-          </div>
+          <div class="kpi-value text-success">${formatINR(kpi.totalSales)}</div>
+          <div class="kpi-count">${kpi.saleCount} ${kpi.saleCount === 1 ? 'sale' : 'sales'}</div>
+          <div class="kpi-subtext">Avg: ${formatINR(kpi.averageSales)} / sale</div>
         </div>
 
-        <!-- 2. Total Expenses -->
+        <!-- 2. Total Purchase -->
+        <div class="kpi-card kpi-purchase">
+          <div class="kpi-header">
+            <span class="kpi-label">Total Purchase</span>
+            <div class="kpi-icon-wrap">
+              <i class="bi bi-box-seam"></i>
+            </div>
+          </div>
+          <div class="kpi-value" style="color: #d97706;">${formatINR(kpi.totalPurchase)}</div>
+          <div class="kpi-count">${kpi.purchaseCount} ${kpi.purchaseCount === 1 ? 'purchase' : 'purchases'}</div>
+          <div class="kpi-subtext">Avg: ${formatINR(kpi.averagePurchase)} / purchase</div>
+        </div>
+
+        <!-- 3. Total Expense -->
         <div class="kpi-card kpi-expense">
           <div class="kpi-header">
-            <span class="kpi-label">${t('totalExpense')}</span>
+            <span class="kpi-label">Total Expense</span>
             <div class="kpi-icon-wrap">
               <i class="bi bi-arrow-up-right"></i>
             </div>
           </div>
           <div class="kpi-value text-danger">${formatINR(kpi.totalExpense)}</div>
-          <div class="kpi-subtext">
-            <span>Purchases: ${formatINR(kpi.totalPurchase)}</span>
-          </div>
+          <div class="kpi-count">${kpi.expenseCount} ${kpi.expenseCount === 1 ? 'expense' : 'expenses'}</div>
+          <div class="kpi-subtext">Avg: ${formatINR(kpi.averageExpense)} / expense</div>
         </div>
 
-        <!-- 3. Net Profit & Margin -->
-        <div class="kpi-card kpi-profit ${isProfitPositive ? 'profit-positive' : 'profit-negative'}">
+        <!-- 4. Net Cash Flow -->
+        <div class="kpi-card kpi-cashflow ${isFlowPositive ? 'flow-positive' : 'flow-negative'}">
           <div class="kpi-header">
-            <span class="kpi-label">${t('netProfit')}</span>
+            <span class="kpi-label">Net Cash Flow</span>
             <div class="kpi-icon-wrap">
-              <i class="bi ${isProfitPositive ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow'}"></i>
+              <i class="bi ${isFlowPositive ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow'}"></i>
             </div>
           </div>
-          <div class="kpi-value ${isProfitPositive ? 'text-success' : 'text-danger'}">
-            ${formatINR(kpi.netProfit)}
+          <div class="kpi-value ${isFlowPositive ? 'text-success' : 'text-danger'}">
+            ${formatINR(kpi.netCashFlow)}
           </div>
-          <div class="kpi-subtext">
-            <span class="badge ${isProfitPositive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} rounded-pill">
-              ${kpi.profitMargin}% Margin
-            </span>
-          </div>
-        </div>
-
-        <!-- 4. Cash vs UPI Split -->
-        <div class="kpi-card kpi-warning">
-          <div class="kpi-header">
-            <span class="kpi-label">Cash Transactions</span>
-            <div class="kpi-icon-wrap" style="background-color: var(--sl-info-bg); color: var(--sl-info-primary);">
-              <i class="bi bi-cash-stack"></i>
-            </div>
-          </div>
-          <div class="kpi-value" style="color: var(--sl-brand-primary);">
-            ${formatINR(kpi.cashInHand)}
-          </div>
-          <div class="kpi-subtext">
-            <span>Digital / UPI: ${formatINR(kpi.upiDigital)}</span>
-          </div>
+          <div class="kpi-count">${kpi.totalTransactions} transactions</div>
+          <div class="kpi-subtext">Sales − Purchases − Expenses</div>
         </div>
       </div>
 
       <!-- Charts Section -->
       <div class="row g-3 mb-4">
-        <!-- 1. Income vs Expense Trend -->
+        <!-- 1. Cash Flow Trend Chart -->
         <div class="col-12 col-lg-8">
           <div class="sl-card h-100">
-            <div class="sl-card-header">
-              <h6 class="sl-card-title">
-                <i class="bi bi-bar-chart-fill text-primary"></i>
-                ${t('trendChartTitle')}
+            <div class="sl-card-header d-flex align-items-center justify-content-between">
+              <h6 class="sl-card-title mb-0">
+                <i class="bi bi-bar-chart-fill text-primary me-1"></i>
+                Financial Activity Trend
               </h6>
               <span class="badge bg-light text-muted border">${data.period.toUpperCase()}</span>
             </div>
-            <div style="position: relative; height: 260px; width: 100%;">
-              <canvas id="trendChart"></canvas>
+            <div style="position: relative; height: 260px; width: 100%;" id="trend-chart-container">
+              ${hasTransactions ? `
+                <canvas id="trendChart"></canvas>
+              ` : `
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 py-5 text-center text-muted">
+                  <i class="bi bi-bar-chart-line fs-2 text-secondary mb-2"></i>
+                  <span class="small fw-semibold text-secondary">No transactions in this period</span>
+                  <span class="text-muted" style="font-size: 11px;">Add entries from Quick Entry to see live trends</span>
+                </div>
+              `}
             </div>
           </div>
         </div>
 
-        <!-- 2. Expense by Category Breakdown -->
+        <!-- 2. Expense & Purchase Category Breakdown -->
         <div class="col-12 col-lg-4">
           <div class="sl-card h-100">
             <div class="sl-card-header">
-              <h6 class="sl-card-title">
-                <i class="bi bi-pie-chart-fill text-danger"></i>
-                ${t('categoryChartTitle')}
+              <h6 class="sl-card-title mb-0">
+                <i class="bi bi-pie-chart-fill text-danger me-1"></i>
+                Category Breakdown
               </h6>
             </div>
-            <div style="position: relative; height: 260px; width: 100%;">
-              <canvas id="categoryChart"></canvas>
+            <div style="position: relative; height: 260px; width: 100%;" id="category-chart-container">
+              ${hasCategoryData ? `
+                <canvas id="categoryChart"></canvas>
+              ` : `
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 py-5 text-center text-muted">
+                  <i class="bi bi-pie-chart fs-2 text-secondary mb-2"></i>
+                  <span class="small fw-semibold text-secondary">No category expenses</span>
+                  <span class="text-muted" style="font-size: 11px;">No purchase or expense records</span>
+                </div>
+              `}
             </div>
           </div>
         </div>
       </div>
     `;
 
-    // Render Chart.js
-    renderCharts(data.charts, data.categoryTotals);
+    // Render Chart.js if data exists
+    if (hasTransactions) {
+      renderCharts(data.charts, data.categoryTotals);
+    }
   } catch (err) {
     console.error('Error rendering dashboard:', err);
     container.innerHTML = `
@@ -223,26 +236,35 @@ function renderCharts(chartData, categoryTotals) {
   if (trendCanvas) {
     if (trendChartInstance) trendChartInstance.destroy();
 
+    const datasets = [
+      {
+        label: 'Sales (₹)',
+        data: chartData.sales || [],
+        backgroundColor: 'rgba(16, 185, 129, 0.85)',
+        borderRadius: 4,
+        borderSkipped: false
+      },
+      {
+        label: 'Purchases (₹)',
+        data: chartData.purchases || [],
+        backgroundColor: 'rgba(245, 158, 11, 0.85)',
+        borderRadius: 4,
+        borderSkipped: false
+      },
+      {
+        label: 'Expenses (₹)',
+        data: chartData.expenses || [],
+        backgroundColor: 'rgba(239, 68, 68, 0.85)',
+        borderRadius: 4,
+        borderSkipped: false
+      }
+    ];
+
     trendChartInstance = new Chart(trendCanvas, {
       type: 'bar',
       data: {
-        labels: chartData.labels,
-        datasets: [
-          {
-            label: 'Income (₹)',
-            data: chartData.sales,
-            backgroundColor: 'rgba(16, 185, 129, 0.85)',
-            borderRadius: 6,
-            borderSkipped: false
-          },
-          {
-            label: 'Expense (₹)',
-            data: chartData.expenses,
-            backgroundColor: 'rgba(239, 68, 68, 0.85)',
-            borderRadius: 6,
-            borderSkipped: false
-          }
-        ]
+        labels: chartData.labels || [],
+        datasets
       },
       options: {
         responsive: true,
@@ -250,7 +272,7 @@ function renderCharts(chartData, categoryTotals) {
         plugins: {
           legend: {
             position: 'top',
-            labels: { boxWidth: 12, font: { family: 'Inter', size: 12 } }
+            labels: { boxWidth: 12, font: { family: 'Inter', size: 11 } }
           },
           tooltip: {
             callbacks: {
@@ -265,7 +287,7 @@ function renderCharts(chartData, categoryTotals) {
           y: {
             grid: { color: '#f1f5f9' },
             ticks: {
-              callback: (val) => `₹${(val / 1000).toFixed(0)}k`
+              callback: (val) => val >= 1000 ? `₹${(val / 1000).toFixed(0)}k` : `₹${val}`
             }
           }
         }
@@ -275,16 +297,11 @@ function renderCharts(chartData, categoryTotals) {
 
   // 2. Category Doughnut Chart
   const catCanvas = document.getElementById('categoryChart');
-  if (catCanvas) {
+  if (catCanvas && categoryTotals && Object.keys(categoryTotals).length > 0) {
     if (categoryChartInstance) categoryChartInstance.destroy();
 
     const catLabels = Object.keys(categoryTotals);
     const catValues = Object.values(categoryTotals);
-
-    if (catLabels.length === 0) {
-      catLabels.push('No Expenses');
-      catValues.push(1);
-    }
 
     const palette = [
       '#ef4444', '#f59e0b', '#6366f1', '#06b6d4', 

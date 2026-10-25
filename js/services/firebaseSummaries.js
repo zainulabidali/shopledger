@@ -17,6 +17,7 @@ import {
   serverTimestamp 
 } from './firebaseConfig.js';
 import { formatDate } from './mockData.js';
+import { getCurrentUser } from './firebaseAuth.js';
 
 /**
  * Fetch a single daily summary document (Zero reads of transactions collection)
@@ -110,10 +111,18 @@ export async function getMonthlySummary(shopId, month) {
 
 /**
  * Reconcile physical cash drawer and freeze day from further writes
+ * Enforces backend locking and prevents duplicate closing entries
  */
 export async function reconcileAndLockDay(shopId, date, reconciliationData) {
   const docRef = doc(db, 'shops', shopId, 'dailySummary', date);
   const snap = await getDoc(docRef);
+
+  if (snap.exists() && snap.data().locked === true) {
+    throw new Error(`Day ${date} is already closed and locked. To record a new closing, you must first reopen the day.`);
+  }
+
+  const existingData = snap.exists() ? snap.data() : {};
+  const history = Array.isArray(existingData.closingHistory) ? [...existingData.closingHistory] : [];
 
   const payload = {
     locked: true,
@@ -123,8 +132,17 @@ export async function reconcileAndLockDay(shopId, date, reconciliationData) {
       difference: reconciliationData.difference,
       note: reconciliationData.note || '',
       verifiedBy: reconciliationData.ownerUid,
-      verifiedAt: new Date().toISOString()
+      verifiedByName: reconciliationData.verifiedByName || 'Store Admin',
+      verifiedAt: new Date().toISOString(),
+      // Snapshot state at closing time to detect post-close modifications
+      snapshotTransactionCount: reconciliationData.transactionCount !== undefined 
+        ? reconciliationData.transactionCount 
+        : (existingData.transactionCount || 0),
+      snapshotExpectedCash: reconciliationData.expectedCash || 0,
+      snapshotSales: existingData.totalSales || 0,
+      snapshotOutflow: (existingData.totalPurchase || 0) + (existingData.totalExpense || 0)
     },
+    closingHistory: history,
     updatedAt: serverTimestamp()
   };
 
@@ -144,6 +162,58 @@ export async function reconcileAndLockDay(shopId, date, reconciliationData) {
     });
   }
 
+  return payload;
+}
+
+/**
+ * Authorized Reopen / Unlock Day action
+ * Preserves closing history and records who reopened the day and why
+ */
+export async function unlockAndReopenDay(shopId, date, reason = '', performedBy = null) {
+  const docRef = doc(db, 'shops', shopId, 'dailySummary', date);
+  const snap = await getDoc(docRef);
+
+  if (!snap.exists()) {
+    throw new Error(`Cannot reopen day: No summary records found for ${date}.`);
+  }
+
+  const existingData = snap.data();
+  if (existingData.locked !== true) {
+    throw new Error(`Day ${date} is already open and not locked.`);
+  }
+
+  let userName = performedBy;
+  if (!userName) {
+    try {
+      const user = await getCurrentUser();
+      userName = user ? (user.name || user.email || user.uid) : 'Store Admin';
+    } catch (_) {
+      userName = 'Store Admin';
+    }
+  }
+  const closingRecord = existingData.reconciliation || {};
+  const history = Array.isArray(existingData.closingHistory) ? [...existingData.closingHistory] : [];
+
+  // Archive previous closing record into history
+  history.push({
+    ...closingRecord,
+    reopenedAt: new Date().toISOString(),
+    reopenedBy: userName,
+    reopenReason: reason
+  });
+
+  const payload = {
+    locked: false,
+    closingHistory: history,
+    lastReopened: {
+      reopenedAt: new Date().toISOString(),
+      reopenedBy: userName,
+      reason
+    },
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(docRef, payload);
   return payload;
 }
 
@@ -179,120 +249,131 @@ export async function getPeriodAnalytics(shopId, preset = 'today', customRange =
     endDate = formatDate(today);
   }
 
-  const dailyDocs = await getDailySummariesRange(shopId, startDate, endDate);
+  // Pre-populate daily trend slots for selected period
+  const dailyMap = {};
+  const cur = new Date(startDate);
+  const end = new Date(endDate);
+  while (cur <= end) {
+    const dStr = formatDate(cur);
+    dailyMap[dStr] = { sales: 0, purchases: 0, expenses: 0 };
+    cur.setDate(cur.getDate() + 1);
+  }
 
   let totalSales = 0;
+  let saleCount = 0;
   let totalPurchase = 0;
+  let purchaseCount = 0;
   let totalExpense = 0;
-  let totalTransactions = 0;
+  let expenseCount = 0;
   const categoryTotals = {};
   const paymentTotals = { cash: 0, upi: 0, card: 0 };
 
-  const trendLabels = [];
-  const salesTrend = [];
-  const expenseTrend = [];
-  const profitTrend = [];
+  try {
+    const txColRef = collection(db, 'shops', shopId, 'transactions');
+    const txQuery = query(
+      txColRef,
+      where('date', '>=', startDate),
+      where('date', '<=', endDate)
+    );
+    const txSnap = await getDocs(txQuery);
 
-  let lowestProfitDay = null;
-  const negativeProfitDays = [];
+    txSnap.docs.forEach(docSnap => {
+      const tx = docSnap.data();
+      const amt = Number(tx.amount) || 0;
+      if (tx.type === 'sale') {
+        totalSales += amt;
+        saleCount += 1;
+        if (dailyMap[tx.date]) dailyMap[tx.date].sales += amt;
+      } else if (tx.type === 'purchase') {
+        totalPurchase += amt;
+        purchaseCount += 1;
+        if (dailyMap[tx.date]) dailyMap[tx.date].purchases += amt;
+        if (tx.category) {
+          categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + amt;
+        }
+      } else if (tx.type === 'expense') {
+        totalExpense += amt;
+        expenseCount += 1;
+        if (dailyMap[tx.date]) dailyMap[tx.date].expenses += amt;
+        if (tx.category) {
+          categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + amt;
+        }
+      }
 
-  dailyDocs.forEach(doc => {
-    totalSales += doc.totalSales || 0;
-    totalPurchase += doc.totalPurchase || 0;
-    totalExpense += doc.totalExpense || 0;
-    totalTransactions += doc.transactionCount || 0;
-
-    Object.entries(doc.categoryTotals || {}).forEach(([cat, val]) => {
-      categoryTotals[cat] = (categoryTotals[cat] || 0) + val;
+      if (tx.paymentMode && paymentTotals.hasOwnProperty(tx.paymentMode)) {
+        paymentTotals[tx.paymentMode] += amt;
+      }
     });
-
-    Object.entries(doc.paymentTotals || {}).forEach(([mode, val]) => {
-      paymentTotals[mode] = (paymentTotals[mode] || 0) + val;
-    });
-
-    const shortDate = doc.date.slice(5);
-    trendLabels.push(shortDate);
-    salesTrend.push(doc.totalSales || 0);
-    expenseTrend.push((doc.totalPurchase || 0) + (doc.totalExpense || 0));
-    profitTrend.push(doc.profit || 0);
-
-    if (lowestProfitDay === null || doc.profit < lowestProfitDay.profit) {
-      lowestProfitDay = { date: doc.date, profit: doc.profit, sales: doc.totalSales, expense: (doc.totalExpense || 0) + (doc.totalPurchase || 0) };
-    }
-
-    if (doc.profit < 0) {
-      negativeProfitDays.push({ date: doc.date, loss: Math.abs(doc.profit) });
-    }
-  });
-
-  const overallExpense = totalPurchase + totalExpense;
-  const netProfit = totalSales - overallExpense;
-  const profitMargin = totalSales > 0 ? ((netProfit / totalSales) * 100).toFixed(1) : '0.0';
-
-  // NOTE: paymentTotals.cash aggregates cash from ALL transaction types (sales + purchases + expenses).
-  // This is NOT the same as net cash in hand. For an accurate cash drawer balance, see Day Close
-  // which reads actual transactions by payment mode. Here we expose the raw totals for reference.
-  const cashInHand = paymentTotals.cash;
-  const upiDigital = paymentTotals.upi + paymentTotals.card;
-
-  // Weak Areas Detection
-  const weakAreas = [];
-
-  if (negativeProfitDays.length > 0) {
-    negativeProfitDays.forEach(np => {
-      weakAreas.push({
-        type: 'danger',
-        icon: 'bi-exclamation-triangle-fill',
-        title: `Loss Recorded on ${np.date}`,
-        desc: `Expenditure exceeded revenue by ₹${np.loss.toLocaleString('en-IN')}. Inspect purchase invoices or abnormal expenses.`
+  } catch (err) {
+    console.warn('Could not query raw transactions for analytics, falling back to daily summaries:', err);
+    const dailyDocs = await getDailySummariesRange(shopId, startDate, endDate);
+    dailyDocs.forEach(d => {
+      totalSales += d.totalSales || 0;
+      totalPurchase += d.totalPurchase || 0;
+      totalExpense += d.totalExpense || 0;
+      saleCount += d.salesCount || (d.totalSales > 0 ? 1 : 0);
+      purchaseCount += d.purchaseCount || (d.totalPurchase > 0 ? 1 : 0);
+      expenseCount += d.expenseCount || (d.totalExpense > 0 ? 1 : 0);
+      if (dailyMap[d.date]) {
+        dailyMap[d.date].sales = d.totalSales || 0;
+        dailyMap[d.date].purchases = d.totalPurchase || 0;
+        dailyMap[d.date].expenses = d.totalExpense || 0;
+      }
+      Object.entries(d.categoryTotals || {}).forEach(([cat, val]) => {
+        categoryTotals[cat] = (categoryTotals[cat] || 0) + val;
+      });
+      Object.entries(d.paymentTotals || {}).forEach(([m, val]) => {
+        if (paymentTotals.hasOwnProperty(m)) paymentTotals[m] += val;
       });
     });
   }
 
-  if (lowestProfitDay && dailyDocs.length > 1 && lowestProfitDay.profit < (netProfit / dailyDocs.length) * 0.5) {
-    weakAreas.push({
-      type: 'warning',
-      icon: 'bi-graph-down-arrow',
-      title: `Lowest Profit Day: ${lowestProfitDay.date}`,
-      desc: `Generated only ₹${lowestProfitDay.profit.toLocaleString('en-IN')} net profit (Revenue: ₹${lowestProfitDay.sales.toLocaleString('en-IN')}, Outflow: ₹${lowestProfitDay.expense.toLocaleString('en-IN')}).`
-    });
-  }
+  const averageSales = saleCount > 0 ? Math.round((totalSales / saleCount) * 100) / 100 : 0;
+  const averagePurchase = purchaseCount > 0 ? Math.round((totalPurchase / purchaseCount) * 100) / 100 : 0;
+  const averageExpense = expenseCount > 0 ? Math.round((totalExpense / expenseCount) * 100) / 100 : 0;
+  const netCashFlow = totalSales - totalPurchase - totalExpense;
+  const totalTransactions = saleCount + purchaseCount + expenseCount;
+  const overallOutflow = totalPurchase + totalExpense;
 
-  Object.entries(categoryTotals).forEach(([cat, val]) => {
-    if (overallExpense > 0 && (val / overallExpense) >= 0.25) {
-      const pct = ((val / overallExpense) * 100).toFixed(0);
-      weakAreas.push({
-        type: 'info',
-        icon: 'bi-pie-chart-fill',
-        title: `High Expense Category: ${cat}`,
-        desc: `Accounts for ${pct}% of total period spending (₹${val.toLocaleString('en-IN')}). Consider cost optimization here.`
-      });
-    }
-  });
+  const trendLabels = Object.keys(dailyMap).map(d => d.slice(5)); // MM-DD
+  const salesTrend = Object.values(dailyMap).map(d => d.sales);
+  const purchasesTrend = Object.values(dailyMap).map(d => d.purchases);
+  const expensesTrend = Object.values(dailyMap).map(d => d.expenses);
 
   return {
     period: preset,
     startDate,
     endDate,
     kpi: {
-      totalIncome: totalSales,
-      totalExpense: overallExpense,
+      totalSales,
+      saleCount,
+      averageSales,
       totalPurchase,
+      purchaseCount,
+      averagePurchase,
+      totalExpense,
+      expenseCount,
+      averageExpense,
+      netCashFlow,
+      totalTransactions,
+      // Backward-compatibility aliases
+      totalIncome: totalSales,
+      totalExpense: overallOutflow,
       totalOperationalExpense: totalExpense,
-      netProfit,
-      profitMargin,
+      netProfit: netCashFlow,
+      profitMargin: totalSales > 0 ? ((netCashFlow / totalSales) * 100).toFixed(1) : '0.0',
       transactionCount: totalTransactions,
-      cashInHand,
-      upiDigital
+      cashInHand: paymentTotals.cash,
+      upiDigital: paymentTotals.upi + paymentTotals.card
     },
     categoryTotals,
     paymentTotals,
     charts: {
       labels: trendLabels,
       sales: salesTrend,
-      expenses: expenseTrend,
-      profit: profitTrend
+      purchases: purchasesTrend,
+      expenses: expensesTrend
     },
-    weakAreas
+    weakAreas: []
   };
 }

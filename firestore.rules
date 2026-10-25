@@ -123,9 +123,8 @@ service cloud.firestore {
         allow write: if isAuthenticated() && (
           isSuperAdmin() || 
           isOwnerOrAdminOf(shopId) || 
-          isStaffOf(shopId) ||
-          getUserRole() in ['owner', 'admin', 'staff', 'super_admin']
-        ) && isDayUnlocked(shopId, date);
+          (isStaffOf(shopId) && isDayUnlocked(shopId, date))
+        );
       }
 
       // Subcollection: Monthly Summaries

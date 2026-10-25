@@ -90,20 +90,48 @@
   background-color: var(--sl-income-primary);
 }
 
+.kpi-card.kpi-purchase::before {
+  background-color: #f59e0b;
+}
+
 .kpi-card.kpi-expense::before {
   background-color: var(--sl-expense-primary);
 }
 
-.kpi-card.kpi-profit.profit-positive::before {
+.kpi-card.kpi-profit.profit-positive::before,
+.kpi-card.kpi-cashflow.flow-positive::before {
   background-color: var(--sl-income-primary);
 }
 
-.kpi-card.kpi-profit.profit-negative::before {
+.kpi-card.kpi-profit.profit-negative::before,
+.kpi-card.kpi-cashflow.flow-negative::before {
   background-color: var(--sl-expense-primary);
 }
 
 .kpi-card.kpi-warning::before {
   background-color: var(--sl-warning-primary);
+}
+
+.kpi-purchase .kpi-icon-wrap {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.kpi-cashflow.flow-positive .kpi-icon-wrap {
+  background-color: var(--sl-income-bg);
+  color: var(--sl-income-primary);
+}
+
+.kpi-cashflow.flow-negative .kpi-icon-wrap {
+  background-color: var(--sl-expense-bg);
+  color: var(--sl-expense-primary);
+}
+
+.kpi-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--sl-text-secondary);
+  margin-top: 3px;
 }
 
 .kpi-header {
@@ -585,6 +613,60 @@
   color: var(--sl-info-text);
   border: 1px solid var(--sl-info-border);
   font-size: 10px;
+}
+
+/* ==========================================================================
+   Transaction Card & Serial Styles
+   ========================================================================== */
+.tx-serial-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 1px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+  min-width: 28px;
+}
+
+.tx-card {
+  position: relative;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border-left: 3.5px solid transparent !important;
+  background-color: var(--sl-surface-card);
+}
+
+.tx-card:hover {
+  background-color: #f8fafc;
+}
+
+.tx-card.tx-type-sale {
+  border-left-color: var(--sl-income-text) !important;
+}
+
+.tx-card.tx-type-purchase {
+  border-left-color: var(--sl-warning-text) !important;
+}
+
+.tx-card.tx-type-expense {
+  border-left-color: var(--sl-expense-text) !important;
+}
+
+.tx-card-amount {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.tx-card-note {
+  background-color: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 8px;
 }
 
 /* ==========================================================================

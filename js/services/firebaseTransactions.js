@@ -19,6 +19,7 @@ import {
   serverTimestamp 
 } from './firebaseConfig.js';
 import { formatDate } from './mockData.js';
+import { formatTime12 } from '../i18n/index.js';
 
 let lastVisibleDoc = null;
 
@@ -155,6 +156,7 @@ export async function createTransaction(shopId, txData) {
     staffUid: txData.staffUid,
     staffName: txData.staffName || 'Staff',
     date: dateStr,
+    time: txData.time || formatTime12(new Date()),
     note: txData.note || '',
     createdAt: serverTimestamp()
   };
@@ -173,6 +175,9 @@ export async function createTransaction(shopId, txData) {
     totalExpense: increment(expenseInc),
     profit: increment(profitInc),
     transactionCount: increment(1),
+    salesCount: increment(txData.type === 'sale' ? 1 : 0),
+    purchaseCount: increment(txData.type === 'purchase' ? 1 : 0),
+    expenseCount: increment(txData.type === 'expense' ? 1 : 0),
     [`categoryTotals.${txData.category}`]: increment(amount),
     [`paymentTotals.${txData.paymentMode}`]: increment(amount),
     updatedAt: serverTimestamp()
@@ -240,6 +245,9 @@ export async function deleteTransaction(shopId, txId) {
     totalExpense: increment(expenseDec),
     profit: increment(profitDec),
     transactionCount: increment(-1),
+    salesCount: increment(tx.type === 'sale' ? -1 : 0),
+    purchaseCount: increment(tx.type === 'purchase' ? -1 : 0),
+    expenseCount: increment(tx.type === 'expense' ? -1 : 0),
     [`categoryTotals.${tx.category}`]: increment(-amount),
     [`paymentTotals.${tx.paymentMode}`]: increment(-amount),
     updatedAt: serverTimestamp()
@@ -345,6 +353,13 @@ export async function updateTransaction(shopId, txId, updatedData) {
     note: updatedData.note || '',
     updatedAt: serverTimestamp()
   };
+
+  if (updatedData.date) {
+    payload.date = updatedData.date;
+  }
+  if (updatedData.time !== undefined && updatedData.time !== '') {
+    payload.time = updatedData.time;
+  }
 
   batch.update(txDocRef, payload);
 

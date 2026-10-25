@@ -8,7 +8,7 @@
  * - Item description & optional note
  * - Live "Today's Recent Entries" feed for instant validation
  */
-import { t, formatINR } from '../i18n/index.js';
+import { t, formatINR, getTxTimeFormatted } from '../i18n/index.js';
 import { authService, shopService, txService } from '../services/index.js';
 import { showToast } from '../components/toast.js';
 
@@ -190,7 +190,7 @@ export async function renderQuickEntry() {
                     <div class="fw-bold ${e.type === 'sale' ? 'text-success' : 'text-danger'} small">
                       ${e.type === 'sale' ? '+' : '-'}${formatINR(e.amount)}
                     </div>
-                    <div class="text-muted" style="font-size: 10px;">${e.createdAt?.toDate ? e.createdAt.toDate().toTimeString().slice(0, 5) : (typeof e.createdAt === 'string' ? e.createdAt.slice(11, 16) : '')}</div>
+                    <div class="text-muted" style="font-size: 11px;"><i class="bi bi-clock me-1"></i>${getTxTimeFormatted(e)}</div>
                   </div>
                 </div>
               `).join('')}
@@ -217,12 +217,44 @@ export function bindQuickEntryEvents(router) {
     amountInput.addEventListener('input', updateSaveLabel);
   }
 
-  // Type Switchers
+  // In-place category chips binder
+  function bindCategoryChipEvents() {
+    const catChips = document.querySelectorAll('.category-chip');
+    catChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        catChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        activeCategory = chip.dataset.category;
+      });
+    });
+  }
+
+  // Type Switchers (Instant in-place update without full-page re-render lag)
   const typeButtons = document.querySelectorAll('.type-btn');
+  const catWrap = document.getElementById('category-chips-wrap');
   typeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
+      typeButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
       activeType = btn.dataset.type;
-      router.refresh();
+
+      const categoriesByType = {
+        sale: ['Mobile Handset', 'Screen Guard / Glass', 'Back Cover / Case', 'Charger / Cable', 'Earphones / Buds', 'Recharge', 'Repair Service', 'Second Hand Phone', 'General Sale'],
+        purchase: ['Wholesale Stock', 'Accessories Bulk', 'Spare Parts', 'Packaging', 'Shop Supplies'],
+        expense: ['Shop Rent', 'Electricity', 'Staff Salary / Advance', 'Staff Food / Tea', 'Petrol / Delivery', 'Misc Repairs']
+      };
+
+      const cats = categoriesByType[activeType] || [];
+      activeCategory = cats[0] || 'General';
+
+      if (catWrap) {
+        catWrap.innerHTML = cats.map(cat => `
+          <button type="button" class="category-chip ${activeCategory === cat ? 'active' : ''}" data-category="${cat}">
+            ${cat}
+          </button>
+        `).join('');
+        bindCategoryChipEvents();
+      }
     });
   });
 
@@ -247,15 +279,8 @@ export function bindQuickEntryEvents(router) {
     });
   }
 
-  // Category Chips
-  const catChips = document.querySelectorAll('.category-chip');
-  catChips.forEach(chip => {
-    chip.addEventListener('click', () => {
-      catChips.forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeCategory = chip.dataset.category;
-    });
-  });
+  // Initial category chips binding
+  bindCategoryChipEvents();
 
   // Payment Mode Pills
   const modePills = document.querySelectorAll('.payment-mode-pill');
@@ -267,13 +292,16 @@ export function bindQuickEntryEvents(router) {
     });
   });
 
-  // Form Submission
+  // Form Submission with duplicate submission protection
   const form = document.getElementById('quick-entry-form');
   const saveBtn = document.getElementById('btn-save-entry');
+  let isSubmitting = false;
 
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (isSubmitting) return;
+
       const amount = Number(amountInput.value);
       const item = document.getElementById('entry-item').value.trim();
       const note = document.getElementById('entry-note').value.trim();
@@ -289,6 +317,7 @@ export function bindQuickEntryEvents(router) {
         return;
       }
 
+      isSubmitting = true;
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
@@ -321,6 +350,8 @@ export function bindQuickEntryEvents(router) {
         showToast(err.message || 'Error recording transaction', 'error');
         saveBtn.disabled = false;
         saveBtn.innerHTML = `<i class="bi bi-check2-circle fs-5"></i> <span>${t('saveEntry')}</span>`;
+      } finally {
+        isSubmitting = false;
       }
     });
   }

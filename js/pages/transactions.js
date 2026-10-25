@@ -12,7 +12,7 @@
  * - Responsive table (desktop) / card feed (mobile)
  * - Pagination
  */
-import { t, formatINR } from '../i18n/index.js';
+import { t, formatINR, getTxTimeFormatted, formatTime12 } from '../i18n/index.js';
 import { authService, shopService, txService } from '../services/index.js';
 import { showToast } from '../components/toast.js';
 import { showConfirmModal } from '../components/modal.js';
@@ -158,39 +158,112 @@ export async function renderTransactions() {
             <table class="table table-hover align-middle mb-0">
               <thead class="table-light small text-uppercase text-secondary" style="font-size: 11px;">
                 <tr>
-                  <th class="ps-3 py-3" style="width: 110px;">${t('date')}</th>
-                  <th style="width: 90px;">Type</th>
-                  <th>${t('item')}</th>
-                  <th>${t('category')}</th>
-                  <th style="width: 90px;">Mode</th>
-                  <th>${t('loggedBy')}</th>
-                  <th class="text-end" style="width: 130px;">${t('amount')}</th>
-                  ${isAuthorized ? `<th class="text-end pe-3" style="width: 50px;"></th>` : ''}
+                  <th class="ps-3 py-3" style="width: 60px;">#</th>
+                  <th style="width: 145px;">Date & Time</th>
+                  <th style="width: 105px;">Type</th>
+                  <th>Item & Category</th>
+                  <th style="width: 95px;">Mode</th>
+                  <th>Logged By</th>
+                  <th class="text-end" style="width: 130px;">Amount</th>
+                  ${isAuthorized ? `<th class="text-end pe-3" style="width: 48px;"></th>` : ''}
                 </tr>
               </thead>
               <tbody>
-                ${list.map(tx => `
-                  <tr>
-                    <td class="ps-3 fw-semibold small text-secondary">${tx.date}</td>
-                    <td>
-                      <span class="sl-badge sl-badge-${tx.type}">${tx.type}</span>
-                    </td>
-                    <td>
-                      <div class="fw-bold text-dark small">${tx.item}</div>
-                      ${tx.note ? `<div class="text-muted small" style="font-size: 11px;"><i class="bi bi-chat-left-dots me-1"></i>${tx.note}</div>` : ''}
-                    </td>
-                    <td class="small text-secondary">${tx.category}</td>
-                    <td>
-                      <span class="sl-badge sl-badge-mode">${tx.paymentMode}</span>
-                    </td>
-                    <td class="small text-muted">${tx.staffName || 'Staff'}</td>
-                    <td class="text-end fw-bold ${tx.type === 'sale' ? 'text-success' : 'text-danger'}">
-                      ${tx.type === 'sale' ? '+' : '-'}${formatINR(tx.amount)}
-                    </td>
-                    ${isAuthorized ? `
-                      <td class="text-end pe-3">
+                ${list.map((tx, idx) => {
+                  const serialNumber = offset + idx + 1;
+                  const txTime = getTxTimeFormatted(tx);
+                  const isSale = tx.type === 'sale';
+                  const amountPrefix = isSale ? '+' : '-';
+                  const amountColor = isSale ? 'text-success' : 'text-danger';
+                  const typeLabel = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
+                  const typeIcon = isSale ? '<i class="bi bi-arrow-down-left"></i>' : (tx.type === 'purchase' ? '<i class="bi bi-cart"></i>' : '<i class="bi bi-arrow-up-right"></i>');
+                  const modeIcon = tx.paymentMode === 'cash' ? '<i class="bi bi-cash"></i>' : (tx.paymentMode === 'upi' ? '<i class="bi bi-phone"></i>' : '<i class="bi bi-credit-card"></i>');
+
+                  return `
+                    <tr>
+                      <td class="ps-3"><span class="tx-serial-badge">#${serialNumber}</span></td>
+                      <td>
+                        <div class="fw-semibold small text-dark">${tx.date}</div>
+                        <div class="small ${txTime === 'Time unavailable' ? 'text-secondary fst-italic' : 'text-muted'}" style="font-size: 11px;">
+                          <i class="bi bi-clock me-1"></i>${txTime}
+                        </div>
+                      </td>
+                      <td>
+                        <span class="sl-badge sl-badge-${tx.type}">${typeIcon} ${typeLabel}</span>
+                      </td>
+                      <td>
+                        <div class="fw-bold text-dark small">${tx.item}</div>
+                        <div class="d-flex align-items-center gap-2 mt-0.5">
+                          <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 10.5px;">${tx.category}</span>
+                          ${tx.note ? `<span class="text-muted small text-truncate" style="font-size: 11px; max-width: 250px;"><i class="bi bi-chat-left-dots me-1"></i>${tx.note}</span>` : ''}
+                        </div>
+                      </td>
+                      <td>
+                        <span class="sl-badge sl-badge-mode">${modeIcon} ${tx.paymentMode}</span>
+                      </td>
+                      <td class="small text-muted">
+                        <i class="bi bi-person me-1"></i>${tx.staffName || 'Staff'}
+                      </td>
+                      <td class="text-end fw-bold ${amountColor}" style="font-size: 14.5px;">
+                        ${amountPrefix}${formatINR(tx.amount)}
+                      </td>
+                      ${isAuthorized ? `
+                        <td class="text-end pe-3">
+                          <div class="dropdown">
+                            <button class="btn btn-sm btn-light border-0 rounded-circle text-muted" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" style="width: 32px; height: 32px;" title="Actions">
+                              <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border py-1" style="min-width: 130px; z-index: 1050;">
+                              <li>
+                                <button class="dropdown-item py-1 small btn-edit-tx" data-id="${tx.id}">
+                                  <i class="bi bi-pencil me-2 text-primary"></i>Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button class="dropdown-item py-1 small text-danger btn-delete-tx" data-id="${tx.id}">
+                                  <i class="bi bi-trash3 me-2"></i>Delete
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
+                        </td>
+                      ` : ''}
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Card List View (d-md-none) -->
+          <div class="d-md-none list-group list-group-flush">
+            ${list.map((tx, idx) => {
+              const serialNumber = offset + idx + 1;
+              const txTime = getTxTimeFormatted(tx);
+              const isSale = tx.type === 'sale';
+              const amountPrefix = isSale ? '+' : '-';
+              const amountColor = isSale ? 'text-success' : 'text-danger';
+              const typeLabel = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
+              const typeIcon = isSale ? '<i class="bi bi-arrow-down-left"></i>' : (tx.type === 'purchase' ? '<i class="bi bi-cart"></i>' : '<i class="bi bi-arrow-up-right"></i>');
+              const modeIcon = tx.paymentMode === 'cash' ? '<i class="bi bi-cash"></i>' : (tx.paymentMode === 'upi' ? '<i class="bi bi-phone"></i>' : '<i class="bi bi-credit-card"></i>');
+
+              return `
+                <div class="list-group-item tx-card tx-type-${tx.type} p-3 border-start-0 border-end-0 border-top-0 border-bottom">
+                  <!-- Row 1: S.No + Type + Mode + Amount + Action Button -->
+                  <div class="d-flex align-items-center justify-content-between mb-2 gap-2">
+                    <div class="d-flex align-items-center flex-wrap gap-1">
+                      <span class="tx-serial-badge" title="Serial #${serialNumber}">#${serialNumber}</span>
+                      <span class="sl-badge sl-badge-${tx.type}">${typeIcon} ${typeLabel}</span>
+                      <span class="sl-badge sl-badge-mode">${modeIcon} ${tx.paymentMode}</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                      <div class="tx-card-amount ${amountColor}">
+                        ${amountPrefix}${formatINR(tx.amount)}
+                      </div>
+                      ${isAuthorized ? `
                         <div class="dropdown">
-                          <button class="btn btn-sm btn-light border-0 rounded-circle text-muted" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" style="width: 32px; height: 32px;" title="Actions">
+                          <button class="btn btn-sm btn-light border-0 rounded-circle text-muted p-0 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" style="width: 28px; height: 28px;" title="Actions">
                             <i class="bi bi-three-dots-vertical"></i>
                           </button>
                           <ul class="dropdown-menu dropdown-menu-end shadow border py-1" style="min-width: 130px; z-index: 1050;">
@@ -206,61 +279,42 @@ export async function renderTransactions() {
                             </li>
                           </ul>
                         </div>
-                      </td>
-                    ` : ''}
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Mobile Card List View (d-md-none) -->
-          <div class="d-md-none list-group list-group-flush">
-            ${list.map(tx => `
-              <div class="list-group-item p-3">
-                <div class="d-flex align-items-center justify-content-between mb-1">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="sl-badge sl-badge-${tx.type}">${tx.type}</span>
-                    <span class="sl-badge sl-badge-mode">${tx.paymentMode}</span>
-                  </div>
-                  <div class="d-flex align-items-center gap-1">
-                    <div class="fw-bold fs-6 ${tx.type === 'sale' ? 'text-success' : 'text-danger'}">
-                      ${tx.type === 'sale' ? '+' : '-'}${formatINR(tx.amount)}
+                      ` : ''}
                     </div>
-                    ${isAuthorized ? `
-                      <div class="dropdown">
-                        <button class="btn btn-sm btn-light border-0 rounded-circle text-muted p-0" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" style="width: 28px; height: 28px;" title="Actions">
-                          <i class="bi bi-three-dots-vertical"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border py-1" style="min-width: 130px; z-index: 1050;">
-                          <li>
-                            <button class="dropdown-item py-1 small btn-edit-tx" data-id="${tx.id}">
-                              <i class="bi bi-pencil me-2 text-primary"></i>Edit
-                            </button>
-                          </li>
-                          <li>
-                            <button class="dropdown-item py-1 small text-danger btn-delete-tx" data-id="${tx.id}">
-                              <i class="bi bi-trash3 me-2"></i>Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    ` : ''}
+                  </div>
+
+                  <!-- Row 2: Item Name & Category Badge -->
+                  <div class="d-flex align-items-baseline justify-content-between gap-2 mb-1">
+                    <div class="fw-bold text-dark fs-6 text-truncate" title="${tx.item}">${tx.item}</div>
+                    <span class="badge bg-light text-secondary border px-2 py-0.5 flex-shrink-0" style="font-size: 11px; font-weight: 500;">
+                      ${tx.category}
+                    </span>
+                  </div>
+
+                  <!-- Optional Note Row -->
+                  ${tx.note ? `
+                    <div class="tx-card-note text-muted small mb-2" style="font-size: 11.5px;">
+                      <i class="bi bi-chat-left-text me-1 text-secondary opacity-75"></i>${tx.note}
+                    </div>
+                  ` : ''}
+
+                  <!-- Row 3: Date & Time + Logged By User -->
+                  <div class="d-flex align-items-center justify-content-between text-muted pt-1 border-top border-light-subtle" style="font-size: 11px;">
+                    <div class="d-inline-flex align-items-center gap-1.5">
+                      <i class="bi bi-calendar3 text-secondary"></i>
+                      <span class="fw-medium">${tx.date}</span>
+                      <span class="text-secondary opacity-50">•</span>
+                      <i class="bi bi-clock text-secondary"></i>
+                      <span class="${txTime === 'Time unavailable' ? 'text-secondary fst-italic' : 'fw-semibold text-dark'}">${txTime}</span>
+                    </div>
+                    <div class="d-inline-flex align-items-center gap-1 text-secondary">
+                      <i class="bi bi-person"></i>
+                      <span>${tx.staffName || 'Staff'}</span>
+                    </div>
                   </div>
                 </div>
-
-                <div class="fw-bold text-dark mb-1">${tx.item}</div>
-
-                <div class="d-flex align-items-center justify-content-between small text-muted">
-                  <div>
-                    <span>${tx.category}</span>
-                    <span>• ${tx.date}</span>
-                  </div>
-                  <div class="small">${tx.staffName || 'Staff'}</div>
-                </div>
-                ${tx.note ? `<div class="text-muted mt-1 small" style="font-size: 11px;">Note: ${tx.note}</div>` : ''}
-              </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
         `}
       </div>
@@ -327,6 +381,18 @@ export async function renderTransactions() {
                   <div class="col-6">
                     <label class="form-label small fw-bold text-secondary text-uppercase" style="font-size: 11px;">Amount (₹)</label>
                     <input type="number" id="edit-tx-amount" class="form-control" min="1" step="any" placeholder="0" required>
+                  </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-secondary text-uppercase" style="font-size: 11px;">Date</label>
+                    <input type="date" id="edit-tx-date" class="form-control" required>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-secondary text-uppercase" style="font-size: 11px;">Time</label>
+                    <input type="text" id="edit-tx-time" class="form-control" placeholder="e.g. 4:46 pm">
+                    <div class="text-muted" style="font-size: 10px; margin-top: 2px;">Leave unchanged to preserve timestamp</div>
                   </div>
                 </div>
 
@@ -448,6 +514,14 @@ export function bindTransactionsEvents(router) {
       document.getElementById('edit-tx-cat').value = tx.category || '';
       document.getElementById('edit-tx-amount').value = tx.amount || '';
       document.getElementById('edit-tx-note').value = tx.note || '';
+      document.getElementById('edit-tx-date').value = tx.date || '';
+
+      const txTime = getTxTimeFormatted(tx);
+      const timeInput = document.getElementById('edit-tx-time');
+      if (timeInput) {
+        timeInput.value = txTime !== 'Time unavailable' ? txTime : '';
+        timeInput.dataset.original = txTime;
+      }
 
       const modalEl = document.getElementById('editTxModal');
       if (modalEl && window.bootstrap && window.bootstrap.Modal) {
@@ -469,6 +543,11 @@ export function bindTransactionsEvents(router) {
       const category = document.getElementById('edit-tx-cat').value;
       const amount = Number(document.getElementById('edit-tx-amount').value);
       const note = document.getElementById('edit-tx-note').value.trim();
+      const date = document.getElementById('edit-tx-date').value;
+
+      const timeInput = document.getElementById('edit-tx-time');
+      const timeVal = timeInput ? timeInput.value.trim() : '';
+      const originalTime = timeInput ? (timeInput.dataset.original || '') : '';
 
       const submitBtn = document.getElementById('btn-save-edit-tx');
       submitBtn.disabled = true;
@@ -478,14 +557,22 @@ export function bindTransactionsEvents(router) {
         const user = await authService.getCurrentUser();
         const shopId = user.shopId || 'shop_metro_001';
 
-        await txService.updateTransaction(shopId, id, {
+        const updateData = {
           type,
           paymentMode,
           item,
           category,
           amount,
-          note
-        });
+          note,
+          date
+        };
+
+        // Only explicitly change the time if the user edited it
+        if (timeVal && timeVal !== originalTime) {
+          updateData.time = formatTime12(timeVal);
+        }
+
+        await txService.updateTransaction(shopId, id, updateData);
 
         const modalEl = document.getElementById('editTxModal');
         if (modalEl && window.bootstrap && window.bootstrap.Modal) {

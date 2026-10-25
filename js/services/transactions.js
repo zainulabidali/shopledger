@@ -4,6 +4,7 @@
  */
 import { saveDb } from './auth.js';
 import { formatDate, formatMonth } from './mockData.js';
+import { formatTime12 } from '../i18n/index.js';
 
 const STORAGE_KEY_DB = 'shopledger_mock_db';
 
@@ -95,6 +96,7 @@ export async function createTransaction(shopId, txData) {
   }
 
   const txId = `tx_${dateStr.replace(/-/g, '')}_${Date.now().toString().slice(-4)}`;
+  const now = new Date();
   const newTx = {
     id: txId,
     shopId,
@@ -106,8 +108,9 @@ export async function createTransaction(shopId, txData) {
     staffUid: txData.staffUid,
     staffName: txData.staffName || 'Staff',
     date: dateStr,
+    time: txData.time || formatTime12(now),
     note: txData.note || '',
-    createdAt: new Date().toISOString()
+    createdAt: now.toISOString()
   };
 
   // 2. Insert into transactions collection
@@ -136,9 +139,16 @@ export async function createTransaction(shopId, txData) {
   d.categoryTotals[newTx.category] = (d.categoryTotals[newTx.category] || 0) + newTx.amount;
   d.paymentTotals[newTx.paymentMode] = (d.paymentTotals[newTx.paymentMode] || 0) + newTx.amount;
 
-  if (newTx.type === 'sale') d.totalSales += newTx.amount;
-  else if (newTx.type === 'purchase') d.totalPurchase += newTx.amount;
-  else if (newTx.type === 'expense') d.totalExpense += newTx.amount;
+  if (newTx.type === 'sale') {
+    d.totalSales += newTx.amount;
+    d.salesCount = (d.salesCount || 0) + 1;
+  } else if (newTx.type === 'purchase') {
+    d.totalPurchase += newTx.amount;
+    d.purchaseCount = (d.purchaseCount || 0) + 1;
+  } else if (newTx.type === 'expense') {
+    d.totalExpense += newTx.amount;
+    d.expenseCount = (d.expenseCount || 0) + 1;
+  }
 
   d.profit = d.totalSales - (d.totalPurchase + d.totalExpense);
 
@@ -197,9 +207,16 @@ export async function deleteTransaction(shopId, txId) {
     daily.categoryTotals[tx.category] = Math.max(0, (daily.categoryTotals[tx.category] || tx.amount) - tx.amount);
     daily.paymentTotals[tx.paymentMode] = Math.max(0, (daily.paymentTotals[tx.paymentMode] || tx.amount) - tx.amount);
 
-    if (tx.type === 'sale') daily.totalSales -= tx.amount;
-    else if (tx.type === 'purchase') daily.totalPurchase -= tx.amount;
-    else if (tx.type === 'expense') daily.totalExpense -= tx.amount;
+    if (tx.type === 'sale') {
+      daily.totalSales -= tx.amount;
+      daily.salesCount = Math.max(0, (daily.salesCount || 1) - 1);
+    } else if (tx.type === 'purchase') {
+      daily.totalPurchase -= tx.amount;
+      daily.purchaseCount = Math.max(0, (daily.purchaseCount || 1) - 1);
+    } else if (tx.type === 'expense') {
+      daily.totalExpense -= tx.amount;
+      daily.expenseCount = Math.max(0, (daily.expenseCount || 1) - 1);
+    }
 
     daily.profit = daily.totalSales - (daily.totalPurchase + daily.totalExpense);
   }
@@ -298,6 +315,13 @@ export async function updateTransaction(shopId, txId, updatedData) {
     note: updatedData.note || '',
     updatedAt: new Date().toISOString()
   };
+
+  if (updatedData.date) {
+    updatedTx.date = updatedData.date;
+  }
+  if (updatedData.time !== undefined && updatedData.time !== '') {
+    updatedTx.time = updatedData.time;
+  }
 
   db.transactions[txIndex] = updatedTx;
   saveDb(db);
